@@ -3,7 +3,8 @@ const cors = require('cors');
 const {
     MongoClient,
     ServerApiVersion,
-    ObjectId
+    ObjectId,
+    MongoCursorInUseError
 } = require('mongodb');
 const res = require('express/lib/response');
 require('dotenv').config();
@@ -28,7 +29,7 @@ async function run () {
   try{
     await client.connect();
     const serviceCollection = client.db('sundorimaCar').collection('service');
-    // console.log('DB connected')
+    const orderCollection = client.db('sundormiaCar').collection('order');
 
     //create an api endpoint to load all data and send response as response will be sent upon request
     app.get('/service', async (req, res) => {
@@ -59,6 +60,21 @@ async function run () {
         const query = {_id: ObjectId(id)};
         const result = await serviceCollection.deleteOne(query);
         res.send(result);
+    });
+
+    //load orders api
+    app.get('/orders', async(req, res) => {
+        const query = {};
+        const cursor = orderCollection.find(query);
+        const orders = await cursor.toArray();
+        res.send(orders);
+    })
+
+    //Order collection API
+    app.post('/order', async (req, res) => {
+        const order = req.body;
+        const result = await orderCollection.insertOne(order);
+        res.send(result);
     })
   }
   finally{
@@ -70,9 +86,9 @@ async function run () {
 run().catch(console.dir);
 
 
-// app.get('/', (req, res) => {
-//     res.send('Sundorima server is running')
-// });
+app.get('/', (req, res) => {
+    res.send('Sundorima server is running')
+});
 
 
 
